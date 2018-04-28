@@ -1,0 +1,13 @@
+{
+  "name": "elm-tetris",
+  "version": "1.0.0",
+  "main": "index.js",
+  "author": "Matias Klemola",
+  "license": "MIT",
+  "private": true,
+  "devDependencies": {
+    "elm": "0.18.0",
+    "elm-analyse": "0.14.2",
+    "elm-format": "0.6.1-alpha"
+  }
+}
