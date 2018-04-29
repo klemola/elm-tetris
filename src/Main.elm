@@ -1,12 +1,12 @@
 module Tetris exposing (..)
 
-import Element
+import Element exposing (show, flow, down)
 import Collage
 import Html exposing (Html, div, text, program)
 import Html.Attributes exposing (style)
 import Game
 import Controller exposing (..)
-import Tetromino
+import Board
 
 
 main : Program Never Model Msg
@@ -47,7 +47,7 @@ type Msg
 defaultTetris : Tetris
 defaultTetris =
     { controller = Nothing
-    , windowSize = ( 400, 400 )
+    , windowSize = ( 600, 600 )
     , game = Game.defaultModel
     }
 
@@ -72,8 +72,36 @@ view tetris =
         ( w, h ) =
             tetris.windowSize
 
+        visuals =
+            [ tetris.game.board
+                |> Board.addTetromino tetris.game.falling
+                |> Board.toForm
+            ]
+
         coll =
-            Collage.collage w h
+            Collage.collage w h visuals
+
+        falling =
+            show tetris.game.falling.shape
+
+        timer =
+            show ("Time " ++ toString (floor (tetris.game.time / 1000)))
+
+        inBounds =
+            show (Board.inBounds tetris.game.falling)
+
+        -- TODO check why Tetromino is always intersecting here
+        isIntersecting =
+            show (Board.isIntersecting tetris.game.falling tetris.game.board)
+
+        contents =
+            flow down
+                [ coll
+                , falling
+                , timer
+                , inBounds
+                , isIntersecting
+                ]
     in
         div
             [ style
@@ -93,7 +121,6 @@ view tetris =
                     , ( "display", "inline-block" )
                     ]
                 ]
-                [ text ("Time " ++ toString (floor (tetris.game.time / 1000)))
-                , Element.toHtml (coll [ Tetromino.toForm tetris.game.falling ])
+                [ Element.toHtml contents
                 ]
             ]
