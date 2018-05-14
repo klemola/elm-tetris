@@ -3,6 +3,7 @@ module Tetromino exposing (..)
 import Block exposing (Block)
 import Color exposing (Color)
 import Collage exposing (..)
+import Random exposing (Generator, float)
 
 
 type alias Location =
@@ -207,3 +208,32 @@ shift ( rows, cols ) tetromino =
             { row = tetromino.pivot.row + (toFloat rows), col = tetromino.pivot.col + (toFloat cols) }
     in
         { tetromino | shape = newShape, pivot = pivot_ }
+
+
+zeroToOne : Generator Float
+zeroToOne =
+    float 0 1
+
+
+shuffleBag : List Float -> List Tetromino
+shuffleBag weights =
+    let
+        tetrominoes =
+            [ i, o, j, l, z, s, t ]
+
+        weighted =
+            List.map2 (,) weights tetrominoes
+
+        sorted =
+            List.sortBy Tuple.first weighted
+    in
+        List.map Tuple.second sorted
+
+
+bag : Generator (List Tetromino)
+bag =
+    let
+        weights =
+            Random.list 7 zeroToOne
+    in
+        Random.map shuffleBag weights

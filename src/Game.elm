@@ -1,6 +1,7 @@
 module Game exposing (..)
 
 import Time exposing (Time)
+import Random exposing (Generator, Seed)
 import Tetromino exposing (Tetromino)
 import Controller exposing (..)
 import Board exposing (Board, testBoard)
@@ -8,6 +9,8 @@ import Board exposing (Board, testBoard)
 
 type alias Model =
     { falling : Tetromino
+    , seed : Seed
+    , bag : List Tetromino
     , board : Board
     , time : Time
     , nextShift : Time
@@ -31,14 +34,32 @@ firstTetromino =
         |> Tetromino.shift startingShift
 
 
+initialSeed : number
+initialSeed =
+    42
+
+
 defaultModel : Model
 defaultModel =
-    { falling = firstTetromino
-    , board = Board.new []
-    , time = 0
-    , nextShift = Time.second
-    , shiftDelay = Time.second
-    }
+    let
+        ( bag, seed ) =
+            Random.step Tetromino.bag (Random.initialSeed initialSeed)
+
+        falling =
+            List.head bag
+                |> Maybe.withDefault Tetromino.i
+
+        bag_ =
+            List.drop 1 bag
+    in
+        { falling = firstTetromino
+        , seed = seed
+        , bag = bag_
+        , board = Board.new []
+        , time = 0
+        , nextShift = Time.second
+        , shiftDelay = Time.second
+        }
 
 
 toAction : Direction -> InputAction
@@ -60,6 +81,46 @@ toAction direction =
             Shift ( 0, 0 )
 
 
+checkBag : Model -> Model
+checkBag model =
+    if not (List.isEmpty model.bag) then
+        model
+    else
+        let
+            ( bag, seed ) =
+                Random.step Tetromino.bag model.seed
+        in
+            { model
+                | bag = bag
+                , seed = seed
+            }
+
+
+nextTetromino : Model -> Model
+nextTetromino model =
+    let
+        model_ =
+            checkBag model
+
+        nextFalling =
+            List.head model_.bag
+                |> Maybe.withDefault Tetromino.i
+                |> Tetromino.shift startingShift
+
+        nextBag =
+            List.drop 1 model.bag
+
+        ( lines, nextBoard ) =
+            Board.addTetromino model_.falling model_.board
+                |> Board.clearLines
+    in
+        { model_
+            | falling = nextFalling
+            , bag = nextBag
+            , board = nextBoard
+        }
+
+
 checkTick : Model -> Model
 checkTick model =
     if model.time < model.nextShift then
@@ -68,10 +129,21 @@ checkTick model =
         let
             nextFalling =
                 Tetromino.shift ( -1, 0 ) model.falling
+
+            nextShift =
+                model.time + model.shiftDelay
+
+            isValid =
+                Board.isValid nextFalling model.board
+
+            model_ =
+                if isValid then
+                    { model | falling = nextFalling }
+                else
+                    nextTetromino model
         in
-            { model
-                | falling = nextFalling
-                , nextShift = model.time + model.shiftDelay
+            { model_
+                | nextShift = nextShift
             }
 
 
